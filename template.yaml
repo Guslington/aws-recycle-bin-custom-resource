@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS recycle bin custom resource dev
+
+Resources:
+  RecycleBinFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Timeout: 60
+      Architectures:
+        - x86_64
+      Policies:
+      - Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Action:
+          - rbin:CreateRule
+          - rbin:DeleteRule
+          - rbin:GetRule
+          - rbin:ListRules
+          - rbin:ListTagsForResource
+          - rbin:TagResource
+          - rbin:UntagResource
+          - rbin:UpdateRule
+          Resource: !Sub arn:aws:rbin:${AWS::Region}:${AWS::AccountId}:rule/*
+
+  RecycleBin:
+    Type: "Custom::RecycleBin"
+    Properties:
+      ServiceToken: !GetAtt RecycleBinFunction.Arn
+      RetentionPeriodValue: 15
+      ResourceType: EC2_IMAGE
+      ResourceTags:
+      - ResourceTagKey: Status
+        ResourceTagValue: Baked
+      Description: AMI cleanup
+      Tags:
+      - Key: Name
+        Value: MyRecycleBin
